@@ -100,6 +100,34 @@ fn parse_term(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
                 }
             })
         }
+        TokenKind::Plus => {
+            parse_expr(tokens, pos + 1).and_then(|(node, next_pos)| {
+                // 0 + node
+                let mut unary = Node::new();
+                unary.entry = TokenKind::Plus;
+                unary.children.push(Node {
+                    children: Vec::new(),
+                    entry: TokenKind::Integer(0)
+                });
+                unary.children.push(node);
+
+                return Ok((unary, next_pos))
+            })
+        }
+        TokenKind::Minus => {
+            parse_summand(tokens, pos + 1).and_then(|(node, next_pos)| {
+                // 0 - node
+                let mut unary = Node::new();
+                unary.entry = TokenKind::Minus;
+                unary.children.push(Node {
+                    children: Vec::new(),
+                    entry: TokenKind::Integer(0)
+                });
+                unary.children.push(node);
+
+                return Ok((unary, next_pos))
+            })
+        }
         _ => {
             Err(format!("Unexpected token {:?} at {}", t, pos))
         }

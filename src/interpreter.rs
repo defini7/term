@@ -198,6 +198,8 @@ fn visit_unaryop_node(node: &Node) -> ValueKind {
 pub fn interpret(src: &str) -> i32 {
     let tree = parser::parse(src).expect("AST(Abstract Syntax Tree) error");
 
+    println!("{:#?}", tree);
+
     let main_state = State::new();
 
     println!("{:?}", visit_node(&tree));
