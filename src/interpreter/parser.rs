@@ -75,6 +75,11 @@ fn parse_term(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
             node.entry = TokenKind::Decimal(n.to_owned());
             Ok((node, pos + 1))
         }
+        TokenKind::QuotedString(s) => {
+            let mut node = Node::new();
+            node.entry = TokenKind::QuotedString(s.to_owned());
+            Ok((node, pos + 1))
+        }
         TokenKind::Identifier(name) => {
             let mut node = Node::new();
             node.entry = TokenKind::Identifier(name.to_owned());

@@ -114,6 +114,7 @@ fn visit_alone_node(node: &Node) -> ValueKind {
         TokenKind::Integer(n) => ValueKind::Integer(n.to_owned()),
         TokenKind::Decimal(n) => ValueKind::Decimal(n.to_owned()),
         TokenKind::Identifier(n) => ValueKind::Identifier(n.to_string()),
+        TokenKind::QuotedString(s) => ValueKind::Str(s.to_string()),
         _ => ValueKind::None
     }
 }
