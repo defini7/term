@@ -31,7 +31,7 @@ fn parse_expr(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
             &TokenKind::Minus => { new_node.entry = TokenKind::Minus; }
             &TokenKind::Assign => { new_node.entry = TokenKind::Assign; }
             _ => return Ok((node_summand, next_pos))
-        }
+        };
 
         new_node.children.push(node_summand);
         let (rhs, i) = parse_expr(tokens, next_pos + 1)?;
@@ -47,25 +47,18 @@ fn parse_summand(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), S
 
     let t = tokens.get(next_pos);
 
+    let mut new_node = Node::new();
+
     match t {
-        Some(&TokenKind::Asterisk) => {
-            let mut product = Node::new();
-            product.entry = TokenKind::Asterisk;
-            product.children.push(node_term);
-            let (rhs, i) = parse_summand(tokens, next_pos + 1)?;
-            product.children.push(rhs);
-            Ok((product, i))
-        }
-        Some(&TokenKind::ForwardSlash) => {
-            let mut div = Node::new();
-            div.entry = TokenKind::ForwardSlash;
-            div.children.push(node_term);
-            let (rhs, i) = parse_summand(tokens, next_pos + 1)?;
-            div.children.push(rhs);
-            Ok((div, i))
-        }
-        _ => Ok((node_term, next_pos))
-    }
+        Some(&TokenKind::Asterisk) => { new_node.entry = TokenKind::Asterisk; },
+        Some(&TokenKind::ForwardSlash) => { new_node.entry = TokenKind::ForwardSlash; },
+        _ => return Ok((node_term, next_pos))
+    };
+
+    new_node.children.push(node_term);
+    let (rhs, i) = parse_summand(tokens, next_pos + 1)?;
+    new_node.children.push(rhs);
+    Ok((new_node, i))
 }
 
 fn parse_term(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), String> {
@@ -137,9 +130,9 @@ fn parse_term(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
 pub fn parse(src: &str) -> Result<Node, String> {
     let tokens = lex(src)?;
 
-    parse_expr(&tokens, 0).and_then(|(n, i)| if i == tokens.len() {
+    parse_expr(&tokens, 0).and_then(|(n, i)| if i >= tokens.len() {
         Ok(n)
     } else {
-        Err(format!("Expected EOF, found {:?} at {}", tokens[i], i))
+        Err(format!("Expected EOF, happened on {:?} at {}", tokens[i], i))
     })
 }

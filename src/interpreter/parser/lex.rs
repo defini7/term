@@ -16,6 +16,7 @@ pub mod lex {
         Let,
         If,
         While,
+        NewLine
     }
 
     impl From<i64> for TokenKind {
@@ -213,6 +214,7 @@ pub mod lex {
             '/' => (TokenKind::ForwardSlash, 1),
             '(' => (TokenKind::Lparen, 1),
             ')' => (TokenKind::Rparen, 1),
+            '\n' => (TokenKind::NewLine, 1),
             '"' => lex_string(data).expect("Couldn't lex a string"),
             '0'..='9' => lex_number(data).expect("Couldn't lex a number"),
             c @ '_' | c if c.is_alphabetic() => {
