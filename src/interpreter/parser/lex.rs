@@ -5,6 +5,7 @@ pub mod lex {
         Decimal(f64),
         Identifier(String),
         QuotedString(String),
+        Boolean(bool),
         Plus,
         Minus,
         Asterisk,
@@ -13,10 +14,14 @@ pub mod lex {
         Assign,
         Lparen,
         Rparen,
-        Let,
         If,
         While,
-        NewLine
+        NewLine,
+        Less,
+        Greater,
+        IsEquals,
+        NotEquals,
+        Not
     }
 
     impl From<i64> for TokenKind {
@@ -155,6 +160,22 @@ pub mod lex {
         Ok((TokenKind::QuotedString(result), bytes_read + 1))
     }
 
+    fn lex_equals(data: String) -> (TokenKind, usize) {
+        if data.as_bytes()[1] as char == '=' {
+            (TokenKind::IsEquals, 2)
+        } else {
+            (TokenKind::Assign, 1)
+        }
+    }
+
+    fn lex_not(data: String) -> (TokenKind, usize) {
+        if data.as_bytes()[1] as char == '=' {
+            (TokenKind::NotEquals, 2)
+        } else {
+            (TokenKind::Not, 1)
+        }
+    }
+
     fn skip_whitespace(data: &str) -> usize {
         match take_while(data, |c| c.is_whitespace()) {
             Ok((_, bytes_skipped)) => bytes_skipped,
@@ -207,7 +228,10 @@ pub mod lex {
 
         let (tok, length) = match next {
             '.' => (TokenKind::Dot, 1),
-            '=' => (TokenKind::Assign, 1),
+            '=' => lex_equals(data.to_string()),
+            '!' => lex_not(data.to_string()),
+            '<' => (TokenKind::Less, 1),
+            '>' => (TokenKind::Greater, 1),
             '+' => (TokenKind::Plus, 1),
             '-' => (TokenKind::Minus, 1),
             '*' => (TokenKind::Asterisk, 1),
@@ -224,7 +248,8 @@ pub mod lex {
                     match i.as_str() {
                         "if" => (TokenKind::If, 2),
                         "while" => (TokenKind::While, 5),
-                        "let" => (TokenKind::Let, 3),
+                        "true" => (TokenKind::Boolean(true), 4),
+                        "false" => (TokenKind::Boolean(false), 5),
                         _ => ident
                     }
                 } else {

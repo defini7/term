@@ -30,6 +30,7 @@ fn parse_expr(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
             &TokenKind::Plus => { new_node.entry = TokenKind::Plus; }
             &TokenKind::Minus => { new_node.entry = TokenKind::Minus; }
             &TokenKind::Assign => { new_node.entry = TokenKind::Assign; }
+            &TokenKind::IsEquals => { new_node.entry = TokenKind::IsEquals; }
             _ => return Ok((node_summand, next_pos))
         };
 
@@ -73,6 +74,11 @@ fn parse_term(tokens: &Vec<TokenKind>, pos: usize) -> Result<(Node, usize), Stri
         TokenKind::Decimal(n) => {
             let mut node = Node::new();
             node.entry = TokenKind::Decimal(n.to_owned());
+            Ok((node, pos + 1))
+        }
+        TokenKind::Boolean(b) => {
+            let mut node = Node::new();
+            node.entry = TokenKind::Boolean(b.to_owned());
             Ok((node, pos + 1))
         }
         TokenKind::QuotedString(s) => {

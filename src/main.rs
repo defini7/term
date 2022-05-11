@@ -17,6 +17,10 @@ fn main() {
         for line in reader.lines() {
             interpreter::interpret(line.unwrap().as_str(), &mut main_state);
         }
+
+        for v in &main_state.variables {
+            println!("Name: {}\nValue: {:?}\n\n", v.0, v.1);
+        }
     } else {
         let stdin = std::io::stdin();
         let mut stdout = std::io::stdout();

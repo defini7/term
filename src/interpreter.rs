@@ -10,6 +10,7 @@ pub enum ValueKind {
     Decimal(f64),
     Str(String),
     Identifier(String),
+    Boolean(bool),
     None
 }
 
@@ -96,7 +97,7 @@ fn visit_node(node: &Node, state: &mut State) -> ValueKind {
         return visit_alone_node(node)
     }
 
-    if let TokenKind::Plus | TokenKind::Minus | TokenKind::Asterisk | TokenKind::ForwardSlash | TokenKind::Assign = node.entry {
+    if let TokenKind::Plus | TokenKind::Minus | TokenKind::Asterisk | TokenKind::ForwardSlash | TokenKind::Assign | TokenKind::IsEquals | TokenKind::NotEquals = node.entry {
         if node.children.len() == 1 {
             visit_unaryop_node(node, state)
         } else if node.children.len() == 2 {
@@ -114,6 +115,7 @@ fn visit_alone_node(node: &Node) -> ValueKind {
         TokenKind::Integer(n) => ValueKind::Integer(n.to_owned()),
         TokenKind::Decimal(n) => ValueKind::Decimal(n.to_owned()),
         TokenKind::Identifier(n) => ValueKind::Identifier(n.to_string()),
+        TokenKind::Boolean(b) => ValueKind::Boolean(b.to_owned()),
         TokenKind::QuotedString(s) => ValueKind::Str(s.to_string()),
         _ => ValueKind::None
     }
@@ -150,7 +152,8 @@ fn do_number_node(lhs: &ValueKind, rhs: &ValueKind, op: &TokenKind, state: &mut 
                                     panic!("Can't divide by zero, {} / {}", ln, rn)
                                 }
                             },
-                            _ => panic!("Unexpected operation!")
+                            &TokenKind::IsEquals => ValueKind::Boolean(ln.clone() == rn),
+                            _ => panic!("Unexpected operation: {:?}", op)
                         }
                     },
                     &ValueKind::Integer(rn) => {
@@ -165,6 +168,7 @@ fn do_number_node(lhs: &ValueKind, rhs: &ValueKind, op: &TokenKind, state: &mut 
                                     panic!("Can't divide by zero: {} / {}", ln, rn)
                                 }
                             },
+                            &TokenKind::IsEquals => ValueKind::Boolean(ln.clone() == rn as f64),
                             _ => panic!("Unexpected operation: {:?}", op)
                         }
                     },
@@ -175,16 +179,17 @@ fn do_number_node(lhs: &ValueKind, rhs: &ValueKind, op: &TokenKind, state: &mut 
                 match rhs {
                     &ValueKind::Decimal(rn) => {
                         match op {
-                            &TokenKind::Plus => ValueKind::Decimal(ln.to_owned() as f64 + rn),
-                            &TokenKind::Minus => ValueKind::Decimal(ln.to_owned() as f64 - rn),
-                            &TokenKind::Asterisk => ValueKind::Decimal(ln.to_owned() as f64 * rn),
+                            &TokenKind::Plus => ValueKind::Decimal(ln.clone() as f64 + rn),
+                            &TokenKind::Minus => ValueKind::Decimal(ln.clone() as f64 - rn),
+                            &TokenKind::Asterisk => ValueKind::Decimal(ln.clone() as f64 * rn),
                             &TokenKind::ForwardSlash => {
                                 if rn != 0.0 {
-                                    ValueKind::Decimal(ln.to_owned() as f64 / rn)
+                                    ValueKind::Decimal(ln.clone() as f64 / rn)
                                 } else {
                                     panic!("Can't divide by zero, {} / {}", ln, rn)
                                 }
                             },
+                            &TokenKind::IsEquals => ValueKind::Boolean(ln.clone() as f64 == rn),
                             _ => panic!("Unexpected operation: {:?}", op)
                         }
                     },
@@ -196,14 +201,15 @@ fn do_number_node(lhs: &ValueKind, rhs: &ValueKind, op: &TokenKind, state: &mut 
                             &TokenKind::ForwardSlash => {
                                 if rn != 0 {
                                     if ln % rn != 0 {
-                                        ValueKind::Decimal(ln.to_owned() as f64 / rn as f64)
+                                        ValueKind::Decimal(ln.clone() as f64 / rn as f64)
                                     } else {
-                                        ValueKind::Integer(ln.to_owned() / rn)
+                                        ValueKind::Integer(ln.clone() / rn)
                                     }
                                 } else {
                                     panic!("Can't divide by zero: {} / {}", ln, rn)
                                 }
                             },
+                            &TokenKind::IsEquals => ValueKind::Boolean(ln.clone() == rn),
                             _ => panic!("Unexpected operation: {:?}", op)
                         }
                     },
@@ -222,6 +228,7 @@ fn get_var(name: &String, state: &mut State) -> ValueKind {
         &ValueKind::Decimal(v) => ValueKind::Decimal(v.to_owned()),
         &ValueKind::Integer(v) => ValueKind::Integer(v.to_owned()),
         &ValueKind::Str(v) => ValueKind::Str(v.to_string()),
+        &ValueKind::Boolean(v) => ValueKind::Boolean(v.to_owned()),
         _ => ValueKind::None
     }
 }
@@ -235,7 +242,8 @@ fn do_assign_node(lhs: &ValueKind, rhs: &ValueKind, state: &mut State) -> ValueK
             ValueKind::Decimal(n) => { new_var.value = ValueKind::Decimal(n.to_owned()); },
             ValueKind::Integer(n) => { new_var.value = ValueKind::Integer(n.to_owned()); },
             ValueKind::Str(n) => { new_var.value = ValueKind::Str(n.to_string()); },
-            ValueKind::Identifier(n) => { new_var.value = get_var(n, state); }
+            ValueKind::Identifier(n) => { new_var.value = get_var(n, state); },
+            ValueKind::Boolean(n) => { new_var.value = ValueKind::Boolean(n.to_owned()) },
             _ => { new_var.value = ValueKind::None; }
         }
 
@@ -272,6 +280,10 @@ fn visit_unaryop_node(node: &Node, state: &mut State) -> ValueKind {
 
 pub fn interpret(src: &str, main_state: &mut State) -> i32 {
     let tree = parser::parse(src).expect("AST(Abstract Syntax Tree) error");
+
+    //println!("{:#?}", tree);
+
+    main_state.variables.insert("NULL".to_string(), ValueKind::Integer(0));
 
     visit_node(&tree, main_state);
 
